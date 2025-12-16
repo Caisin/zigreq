@@ -19,59 +19,72 @@ pub fn main() !void {
     // We create a scope to manage resources (req, resp) cleanly
     {
         // const url = "https://httpbin.org/get";
-        const url = "https://jsonplaceholder.typicode.com/posts/1";
-        std.debug.print("\n[GET] Requesting {s}...\n", .{url});
+        // const url = "https://jsonplaceholder.typicode.com/posts/1";
+        // for () |value| {}
+        const uris = [_][]const u8{
+            // "https://httpbin.org/get",
+            "https://jsonplaceholder.typicode.com/posts/1",
+            "https://videomgr.qinjiu8.com/basic-api/param/sys_setting",
+        };
+        for (uris) |url| {
+            std.debug.print("\n[GET] Requesting {s}...\n", .{url});
 
-        // Start building a GET request
-        // The RequestBuilder needs to be deinitialized to free the copied URL string
-        var builder = try client.get(url);
-        defer builder.deinit();
+            // Start building a GET request
+            // The RequestBuilder needs to be deinitialized to free the copied URL string
+            var builder = try client.get(url);
+            defer builder.deinit();
 
-        // Add custom headers
-        _ = try builder.header("User-Agent", "zigreq-example/1.0");
-        _ = try builder.header("Accept", "application/json");
+            // Add custom headers
+            _ = try builder.header("User-Agent", "zigreq-example/1.0");
+            _ = try builder.header("Accept", "application/json");
 
-        // Execute the request
-        var response = try builder.send();
-        // Response owns the body and headers memory, so it must be deinitialized
-        defer response.deinit();
+            // Execute the request
+            var response = try builder.send();
+            // Response owns the body and headers memory, so it must be deinitialized
+            defer response.deinit();
 
-        std.debug.print("Status: {d}\n", .{@intFromEnum(response.status)});
-        if (response.getHeader("content-type")) |ct| {
-            std.debug.print("Content-Type: {s}\n", .{ct});
+            std.debug.print("Status: {d}\n", .{@intFromEnum(response.status)});
+            if (response.getHeader("content-type")) |ct| {
+                std.debug.print("Content-Type: {s}\n", .{ct});
+            }
+            std.debug.print("Body Length: {d} bytes\n", .{response.text().len});
+
+            var headers = response.headers.iterator();
+            while (headers.next()) |h| {
+                std.debug.print("{s}: {s}\n", .{ h.key_ptr.*, h.value_ptr.* });
+            }
+
+            // Print first 200 chars of body if available
+            const body = response.text();
+            const preview_len = @min(body.len, 2000);
+            std.debug.print("Body Preview:\n{s}...\n", .{body[0..preview_len]});
         }
-        std.debug.print("Body Length: {d} bytes\n", .{response.text().len});
-
-        // Print first 200 chars of body if available
-        const body = response.text();
-        const preview_len = @min(body.len, 200);
-        std.debug.print("Body Preview:\n{s}...\n", .{body[0..preview_len]});
     }
 
     // 3. Perform a POST request
-    {
-        const url = "https://httpbin.org/post";
-        std.debug.print("\n[POST] Requesting {s}...\n", .{url});
+    // {
+    //     const url = "https://httpbin.org/post";
+    //     std.debug.print("\n[POST] Requesting {s}...\n", .{url});
 
-        var builder = try client.post(url);
-        defer builder.deinit();
+    //     var builder = try client.post(url);
+    //     defer builder.deinit();
 
-        const json_payload =
-            \\{
-            \\  "name": "Ziggy",
-            \\  "role": "Mascot",
-            \\  "language": "Zig"
-            \\}
-        ;
+    //     const json_payload =
+    //         \\{
+    //         \\  "name": "Ziggy",
+    //         \\  "role": "Mascot",
+    //         \\  "language": "Zig"
+    //         \\}
+    //     ;
 
-        _ = try builder.header("Content-Type", "application/json");
-        _ = try builder.body(json_payload);
+    //     _ = try builder.header("Content-Type", "application/json");
+    //     _ = try builder.body(json_payload);
 
-        var response = try builder.send();
-        defer response.deinit();
+    //     var response = try builder.send();
+    //     defer response.deinit();
 
-        std.debug.print("Status: {d}\n", .{@intFromEnum(response.status)});
-        const body = response.text();
-        std.debug.print("Response:\n{s}\n", .{body});
-    }
+    //     std.debug.print("Status: {d}\n", .{@intFromEnum(response.status)});
+    //     const body = response.text();
+    //     std.debug.print("Response:\n{s}\n", .{body});
+    // }
 }

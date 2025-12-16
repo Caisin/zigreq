@@ -105,16 +105,27 @@ pub const RequestBuilder = struct {
         var resp_it = incoming_resp.head.iterateHeaders();
         while (resp_it.next()) |h| {
             // We duplicate headers because they point to server_header_buffer which is temporary
-            const name = try self.allocator.dupe(u8, h.name);
+            var name = try self.allocator.dupe(u8, h.name);
+            // 转小写
+            for (name, 0..) |c, i| {
+                name[i] = std.ascii.toLower(c);
+            }
             const value = try self.allocator.dupe(u8, h.value);
             try resp.addHeader(name, value);
         }
+        const decompress_buffer: []u8 = switch (incoming_resp.head.content_encoding) {
+            .identity => &.{},
+            .zstd => try client.allocator.alloc(u8, std.compress.zstd.default_window_len),
+            .deflate, .gzip => try client.allocator.alloc(u8, std.compress.flate.max_window_len),
+            .compress => return error.UnsupportedCompressionMethod,
+        };
+        defer client.allocator.free(decompress_buffer);
 
-        // Read response body
-        var reader_buf: [4096]u8 = undefined;
-        const reader = incoming_resp.reader(&reader_buf);
+        var reader_buf: [64]u8 = undefined;
+        var decompress: std.http.Decompress = undefined;
+        const reader = incoming_resp.readerDecompressing(&reader_buf, &decompress, decompress_buffer);
+
         var buf: [4096]u8 = undefined;
-
         if (incoming_resp.head.content_length) |len| {
             var remaining = len;
             while (remaining > 0) {
