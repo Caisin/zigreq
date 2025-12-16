@@ -60,31 +60,4 @@ pub fn main() !void {
             std.debug.print("Body Preview:\n{s}...\n", .{body[0..preview_len]});
         }
     }
-
-    // 3. Perform a POST request
-    // {
-    //     const url = "https://httpbin.org/post";
-    //     std.debug.print("\n[POST] Requesting {s}...\n", .{url});
-
-    //     var builder = try client.post(url);
-    //     defer builder.deinit();
-
-    //     const json_payload =
-    //         \\{
-    //         \\  "name": "Ziggy",
-    //         \\  "role": "Mascot",
-    //         \\  "language": "Zig"
-    //         \\}
-    //     ;
-
-    //     _ = try builder.header("Content-Type", "application/json");
-    //     _ = try builder.body(json_payload);
-
-    //     var response = try builder.send();
-    //     defer response.deinit();
-
-    //     std.debug.print("Status: {d}\n", .{@intFromEnum(response.status)});
-    //     const body = response.text();
-    //     std.debug.print("Response:\n{s}\n", .{body});
-    // }
 }

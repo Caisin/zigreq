@@ -47,6 +47,14 @@ pub const Response = struct {
         return self.body.items;
     }
 
+    /// Parse the response body as JSON into type T.
+    /// The returned Parsed(T) owns the allocated memory (via an arena) and must be deinitialized.
+    /// NOTE: Unless `options.allocate` is set to `.alloc_always`, strings in the result may
+    /// reference the Response body, so the Response must outlive the parsed data.
+    pub fn json(self: Response, comptime T: type, options: std.json.ParseOptions) !std.json.Parsed(T) {
+        return std.json.parseFromSlice(T, self.allocator, self.body.items, options);
+    }
+
     /// Get a header value by name
     pub fn getHeader(self: Response, name: []const u8) ?[]const u8 {
         return self.headers.get(name);
