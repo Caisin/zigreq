@@ -9,7 +9,7 @@ pub fn main() !void {
 
     // 1. Initialize the Client
     // The client holds a connection pool and configuration.
-    var client = zigreq.Client.init(allocator, .{});
+    var client = try zigreq.Client.init(allocator, .{});
     // Ensure we free resources at the end
     defer client.deinit();
 
@@ -23,8 +23,9 @@ pub fn main() !void {
         // for () |value| {}
         const uris = [_][]const u8{
             // "https://httpbin.org/get",
-            "https://jsonplaceholder.typicode.com/posts/1",
-            "https://videomgr.qinjiu8.com/basic-api/param/sys_setting",
+            "http://localhost:8888/res/sl/s/2",
+            // "https://jsonplaceholder.typicode.com/posts/1",
+            // "https://videomgr.qinjiu8.com/basic-api/param/sys_setting",
         };
         for (uris) |url| {
             std.debug.print("\n[GET] Requesting {s}...\n", .{url});

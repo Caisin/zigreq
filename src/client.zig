@@ -14,13 +14,16 @@ pub const Client = struct {
     client: std.http.Client,
 
     /// Create a new Client instance.
-    pub fn init(allocator: std.mem.Allocator, options: ClientOptions) Client {
+    pub fn init(allocator: std.mem.Allocator, options: ClientOptions) !Client {
         _ = options;
+        var client = std.http.Client{
+            .allocator = allocator,
+        };
+        // 加载系统根证书
+        try client.ca_bundle.rescan(allocator);
         return .{
             .allocator = allocator,
-            .client = std.http.Client{
-                .allocator = allocator,
-            },
+            .client = client,
         };
     }
 
