@@ -1,36 +1,37 @@
 const std = @import("std");
-const pool = @import("pool.zig");
 const request_mod = @import("request.zig");
 const types = @import("types.zig");
 
 /// Configuration options for the Client
 pub const ClientOptions = struct {
-    pool_config: pool.Config = .{},
+    // Empty for now - placeholder for future options
 };
 
 /// The main HTTP Client struct.
-/// Matches reqwest's Client in Rust.
-/// Holds a connection pool and creates RequestBuilders.
+/// Provides a lightweight wrapper around std.http.Client.
 pub const Client = struct {
     allocator: std.mem.Allocator,
-    connection_pool: pool.Pool,
+    client: std.http.Client,
 
     /// Create a new Client instance.
     pub fn init(allocator: std.mem.Allocator, options: ClientOptions) Client {
+        _ = options;
         return .{
             .allocator = allocator,
-            .connection_pool = pool.Pool.init(allocator, options.pool_config),
+            .client = std.http.Client{
+                .allocator = allocator,
+            },
         };
     }
 
-    /// Deinitialize the Client and its connection pool.
+    /// Deinitialize the Client.
     pub fn deinit(self: *Client) void {
-        self.connection_pool.deinit();
+        self.client.deinit();
     }
 
     /// Start building a request with a specific method and URL.
     pub fn request(self: *Client, method: types.Method, url: []const u8) !request_mod.RequestBuilder {
-        return request_mod.RequestBuilder.init(self.allocator, &self.connection_pool, method, url);
+        return request_mod.RequestBuilder.init(self.allocator, &self.client, method, url);
     }
 
     /// Start building a GET request.

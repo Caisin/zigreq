@@ -1,12 +1,12 @@
 const std = @import("std");
 const types = @import("types.zig");
 const response = @import("response.zig");
-const pool = @import("pool.zig");
+// pool removed - using std.http.Client directly
 
 /// Builder for constructing HTTP requests
 pub const RequestBuilder = struct {
     allocator: std.mem.Allocator,
-    pool_ref: *pool.Pool,
+    cli: *std.http.Client,
     method: types.Method,
     url: []const u8,
     header_map: std.StringHashMap([]const u8),
@@ -16,14 +16,14 @@ pub const RequestBuilder = struct {
     /// Duplicates the URL to ensure ownership.
     pub fn init(
         allocator: std.mem.Allocator,
-        p: *pool.Pool,
+        client: *std.http.Client,
         method: types.Method,
         url: []const u8,
     ) !RequestBuilder {
         const url_copy = try allocator.dupe(u8, url);
         return .{
             .allocator = allocator,
-            .pool_ref = p,
+            .cli = client,
             .method = method,
             .url = url_copy,
             .header_map = std.StringHashMap([]const u8).init(allocator),
@@ -61,7 +61,7 @@ pub const RequestBuilder = struct {
     /// Execute the request and return a Response.
     /// Does NOT deinitialize the RequestBuilder.
     pub fn send(self: *RequestBuilder) !response.Response {
-        const client = self.pool_ref.getStdClient();
+        // Client is now directly accessible
         const uri = try std.Uri.parse(self.url);
 
         // Buffer for server headers (8KB standard)
@@ -79,7 +79,7 @@ pub const RequestBuilder = struct {
         const payload = self.request_body.slice();
 
         // Open connection / Create request
-        var req = try client.request(self.method, uri, .{
+        var req = try self.cli.request(self.method, uri, .{
             .extra_headers = headers_list.items,
         });
         defer req.deinit();
@@ -115,11 +115,11 @@ pub const RequestBuilder = struct {
         }
         const decompress_buffer: []u8 = switch (incoming_resp.head.content_encoding) {
             .identity => &.{},
-            .zstd => try client.allocator.alloc(u8, std.compress.zstd.default_window_len),
-            .deflate, .gzip => try client.allocator.alloc(u8, std.compress.flate.max_window_len),
+            .zstd => try self.cli.allocator.alloc(u8, std.compress.zstd.default_window_len),
+            .deflate, .gzip => try self.cli.allocator.alloc(u8, std.compress.flate.max_window_len),
             .compress => return error.UnsupportedCompressionMethod,
         };
-        defer client.allocator.free(decompress_buffer);
+        defer self.cli.allocator.free(decompress_buffer);
 
         var reader_buf: [64]u8 = undefined;
         var decompress: std.http.Decompress = undefined;
