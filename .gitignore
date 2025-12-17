@@ -1,2 +1,15 @@
+# Zig
 .zig-cache
+zig-cache
 zig-out
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
